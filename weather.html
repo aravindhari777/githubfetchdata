@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+</head>
+
+<body>
+    <div class="container">
+        <h1>Weather Check - India</h1>
+        <input type="text" id="cityInput" placeholder="Enter city name" />
+        <button onclick="getWeather()">Check Weather</button>
+
+        <div id="weatherResult"></div>
+    </div>
+    <div class="history-container">
+        <h2>Search History</h2>
+        <ul id="historyList"></ul>
+    </div>
+    <script>
+        function getWeather(city = null) {
+            let cityName = city || document.getElementById("cityInput").value.trim();
+            if (!cityName) {
+                document.getElementById("weatherResult").innerHTML = `<p class="error-message">⚠ Please enter a city name.</p>`;
+                return;
+            }
+            let apiKey = "beb71438bcc166323c30efff57a7b21d";
+            let apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${cityName},IN&appid=${apiKey}&units=metric`;
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.cod === 200) {
+                        document.getElementById("weatherResult").innerHTML = `
+                    <h3>${data.name}, ${data.sys.country}</h3>
+                    <p>- Temperature: ${data.main.temp}°C</p>
+                    <p>- Wind Speed: ${data.wind.speed} m/s</p>
+                    <p>- Humidity: ${data.main.humidity}%</p>
+                    <p>- Condition: ${data.weather[0].description}</p>
+                `;
+                        saveSearchHistory(cityName);
+                    } else {
+                        document.getElementById("weatherResult").innerHTML = `<p class="error-message"> City not found. Try again.</p>`;
+                    }
+                })
+                .catch(() => {
+                    document.getElementById("weatherResult").innerHTML = `<p class="error-message">Error fetching weather data.</p>`;
+                });
+        }
+
+        function saveSearchHistory(city) {
+            let history = JSON.parse(localStorage.getItem("weatherHistory")) || [];
+            if (!history.includes(city)) {
+                history.unshift(city);
+                localStorage.setItem("weatherHistory", JSON.stringify(history));
+            }
+            displaySearchHistory();
+        }
+
+        function displaySearchHistory() {
+            let history = JSON.parse(localStorage.getItem("weatherHistory")) || [];
+            let historyList = document.getElementById("historyList");
+            historyList.innerHTML = history.map((city, index) => `
+        <li>
+            ${city} 
+            <button onclick="getWeather('${city}')">Show Weather</button>
+            <button onclick="editCity(${index})">Edit</button>
+            <button onclick="removeCity(${index})">Remove</button>
+        </li>
+    `).join("");
+        }
+
+        function editCity(index) {
+            let history = JSON.parse(localStorage.getItem("weatherHistory")) || [];
+            let newCity = prompt("Enter the new city name:", history[index]);
+            if (newCity && newCity.trim() !== "") {
+                history[index] = newCity.trim();
+                localStorage.setItem("weatherHistory", JSON.stringify(history));
+                displaySearchHistory();
+                getWeather(newCity);
+            }
+        }
+
+        function removeCity(index) {
+            let history = JSON.parse(localStorage.getItem("weatherHistory")) || [];
+            history.splice(index, 1);
+            localStorage.setItem("weatherHistory", JSON.stringify(history));
+            displaySearchHistory();
+        }
+        window.onload = displaySearchHistory;
+    </script>
+</body>
+
+</html>
